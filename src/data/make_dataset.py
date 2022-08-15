@@ -57,7 +57,7 @@ def read_stata_file(dct_path, **options):
             vtype, name, fstring = t[1:4]
             name = name.lower()
 
-            if vtype.startwith('str'):
+            if vtype.startswith('str'):
                 vtype = str
             else:
                 vtype = type_map[vtype]
@@ -69,7 +69,7 @@ def read_stata_file(dct_path, **options):
         vars = pd.DataFrame(var_info, columns=columns)
 
         vars['end'] = vars.start.shift(-1)
-        vars.loc[len(vars) - 1, 'end'] = -1
+        vars.loc[len(vars) - 1, 'end'] = 0
 
         dct = FixedWidthVariables(vars, index_base=1)
 

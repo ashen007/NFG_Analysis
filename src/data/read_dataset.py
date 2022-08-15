@@ -1,6 +1,7 @@
+import collections
 import numpy as np
 import pandas as pd
-import make_dataset
+from ..data import make_dataset
 
 
 def read_fem_resp(dct_path, dat_path, nrows=None):
@@ -11,7 +12,7 @@ def read_fem_resp(dct_path, dat_path, nrows=None):
     :return:
     """
     dct = make_dataset.read_stata_file(dct_path=dct_path)
-    df = dct.read_fixed_width(dat_path, nrows)
+    df = dct.read_fixed_width(dat_path, nrows=nrows)
 
     return df
 
@@ -24,13 +25,22 @@ def read_fem_preg(dct_path, dat_path, nrows=None):
     :return:
     """
     dct = make_dataset.read_stata_file(dct_path=dct_path)
-    df = dct.read_fixed_width(dat_path, nrows)
+    df = dct.read_fixed_width(dat_path, nrows=nrows)
 
     return df
 
 
 def read_male_resp(dct_path, dat_path, nrows=None):
     dct = make_dataset.read_stata_file(dct_path=dct_path)
-    df = dct.read_fixed_width(dat_path, nrows)
+    df = dct.read_fixed_width(dat_path, nrows=nrows)
 
     return df
+
+
+def make_preg_map(df):
+    d = collections.defaultdict(list)
+
+    for index, case_id in df.caseid.iteritems():
+        d[case_id].append(index)
+
+    return d
