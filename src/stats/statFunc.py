@@ -92,6 +92,13 @@ class Histogram(object):
     def largest_k(self, k=1):
         return sorted(self.d.items(), reverse=True)[:k]
 
+    def sample_mode(self):
+        val, _ = self.largest_k()[0]
+        return val
+
+    def sample_allmods(self):
+        return sorted(self.d.items(), reverse=True)
+
 
 class Summary(object):
     """summary statistics about distribution"""
