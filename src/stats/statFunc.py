@@ -85,3 +85,28 @@ class Histogram(object):
         """
         for val, freq in hist.items():
             self.incr(val, -freq)
+
+
+class Summary(object):
+    """summary statistics about distribution"""
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def sample_mean(self, axis):
+        return np.mean(self.obj, axis=axis)
+
+    def sample_variance(self, axis):
+        return np.var(self.obj, axis=axis)
+
+    def sample_std(self, axis):
+        return np.std(self.obj, axis=axis)
+
+    def effect_size(self, other):
+        diff = self.sample_mean(axis=0) - np.mean(other)
+        var1 = self.sample_variance(axis=0)
+        var2 = np.var(other)
+        n1, n2 = len(self.obj), len(other)
+        pooled_var = (n1 * var1 + n2 * var2) / (n1 + n2)
+
+        return diff / np.sqrt(pooled_var)
