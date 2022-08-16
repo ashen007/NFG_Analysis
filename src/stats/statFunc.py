@@ -93,11 +93,11 @@ class Histogram(object):
         return sorted(self.d.items(), reverse=True)[:k]
 
     def sample_mode(self):
-        val, _ = self.largest_k()[0]
-        return val
+        val = np.max(list(self.d.values()))
+        return list(self.d.keys())[list(self.d.values()).index(val)]
 
     def sample_allmods(self):
-        return sorted(self.d.items(), reverse=True)
+        return [i for i in list(self.d.items()) if i[1] == np.max(list(self.d.values()))]
 
 
 class Summary(object):
