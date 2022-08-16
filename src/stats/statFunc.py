@@ -86,6 +86,12 @@ class Histogram(object):
         for val, freq in hist.items():
             self.incr(val, -freq)
 
+    def smallest_k(self, k=1):
+        return sorted(self.d.items(), reverse=False)[:k]
+
+    def largest_k(self, k=1):
+        return sorted(self.d.items(), reverse=True)[:k]
+
 
 class Summary(object):
     """summary statistics about distribution"""
