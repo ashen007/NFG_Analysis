@@ -432,13 +432,13 @@ def var(obj, axis=0):
     """calculate variance"""
     if isinstance(obj, list):
         obj = convert_to_array(obj)
-        return (obj - mean(obj)) ** 2 / (len(obj) - 1)
+        return np.sum((obj - mean(obj)) ** 2) / (len(obj) - 1)
 
     elif isinstance(obj, pd.Series):
-        return (obj - mean(obj)) ** 2 / (len(obj) - 1)
+        return np.sum((obj - mean(obj)) ** 2) / (len(obj) - 1)
 
     elif isinstance(obj, pd.DataFrame):
-        return obj.apply(lambda x: ((x - mean(x)) ** 2) / (len(obj) - 1), axis=axis)
+        return obj.apply(lambda x: np.sum(((x - mean(x)) ** 2)) / (len(obj) - 1), axis=axis)
 
 
 def std(obj, axis=0):
@@ -450,13 +450,13 @@ def mean_abs_deviation(obj, axis=0):
     """calculate mean absolute deviation"""
     if isinstance(obj, list):
         obj = convert_to_array(obj)
-        return np.abs(obj - mean(obj)) / (len(obj))
+        return np.sum(np.abs(obj - mean(obj))) / (len(obj))
 
     elif isinstance(obj, pd.Series):
-        return np.abs(obj - mean(obj)) / (len(obj))
+        return np.sum(np.abs(obj - mean(obj))) / (len(obj))
 
     elif isinstance(obj, pd.DataFrame):
-        return obj.apply(lambda x: np.abs(x - mean(x)) / (len(x)), axis=axis)
+        return obj.apply(lambda x: np.sum(np.abs(x - mean(x))) / (len(x)), axis=axis)
 
 
 def mad_from_median(obj, axis=0):
@@ -483,6 +483,21 @@ def iqr(obj, axis=0):
 
     elif isinstance(obj, pd.DataFrame):
         return obj.apply(lambda x: np.quantile(x, q=0.75) - np.quantile(x, q=0.25), axis=axis)
+
+
+def cohen_effect_size(obj1, obj2):
+    """
+    calculate cohen's d effect size
+    :param obj1:
+    :param obj2:
+    :return:
+    """
+    diff = mean(obj1) - mean(obj2)
+    var1 = var(obj1)
+    var2 = var(obj2)
+    pooled_var = (var1 * len(obj1) + var2 * len(obj2)) / (len(obj1) + len(obj2))
+
+    return diff / np.sqrt(pooled_var)
 
 
 def pmf_prob_greater(pmf1, pmf2):
