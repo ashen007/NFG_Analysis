@@ -49,7 +49,7 @@ class _DictWrapper(object):
                 self.d.update(pd.Series(obj).groupby(quantile).count().to_dict().items())
 
         if len(self) > 0 and isinstance(self, Pmf):
-            self.Normalize()
+            self.normalize()
 
     def copy(self, label=None):
         """returns copy of dictionary"""
@@ -243,26 +243,163 @@ class Histogram(_DictWrapper):
             self.increase(val, -freq)
 
 
+class Pmf(_DictWrapper):
+    def prob(self, x, default=0):
+        """
+        get probability associate with the x
+        :param x:
+        :param default:
+        :return:
+        """
+        return self.d.get(x, default)
+
+    def probs(self, xs):
+        """
+        get probabilities for sequence of x values
+        :param xs:
+        :return:
+        """
+        return [self.prob(x) for x in xs]
+
+    def percentile(self, percentage):
+        """compute a percentile of a given pmf"""
+        p = percentage / 100
+        total = 0
+
+        for val, freq in sorted(self.items()):
+            total += freq
+
+            if total >= p:
+                return val
+
+    def prob_greater(self, x):
+        """
+        probability that a sample from this pmf exceeds x
+        :param x:
+        :return:
+        """
+        if isinstance(x, _DictWrapper):
+            return pmf_prob_greater(self, x)
+        else:
+            t = [prob for (val, prob) in self.d.items() if val > x]
+            return np.sum(t)
+
+    def prob_less(self, x):
+        """
+        probability that a sample from this pmf less than x
+        :param x:
+        :return:
+        """
+        if isinstance(x, _DictWrapper):
+            return pmf_prob_less(self, x)
+        else:
+            t = [prob for (val, prob) in self.d.items() if val < x]
+            return np.sum(t)
+
+    def prob_equal(self, x):
+        """
+        probability that a sample from this pmf is equal x
+        :param x:
+        :return:
+        """
+        if isinstance(x, _DictWrapper):
+            return pmf_prob_equal(self, x)
+        else:
+            return self[x]
+
+    def normalize(self, fraction=1):
+        """
+        normalize this pmf so the sum of all probabilities is fraction
+        :param fraction:
+        :return:
+        """
+        if self._log:
+            raise ValueError('normalize: pmf is under a log transform')
+        total = self.sum_()
+
+        if total == 0:
+            raise ValueError('normalize: total probability is zero')
+
+        factor = fraction / total
+
+        for x in self.d:
+            self.d[x] *= factor
+
+        return total
+
+    def mean(self):
+        """compute the mean of a pmf"""
+        return np.sum(p * x for x, p in self.items())
+
+    def median(self):
+        """compute median of a pmf"""
+        return
+
+    def var(self):
+        """compute the variance of a pmf"""
+        mu = self.mean()
+        return np.sum(((x ** 2) * p) - (mu ** 2) for x, p in self.items())
+
+    def std(self, mu=None):
+        """
+        compute standard deviation of pmf
+        :param mu:
+        :return:
+        """
+        return np.sqrt(self.var())
+
+
 class Summary(object):
     """summary statistics about distribution"""
+    pass
 
-    def __init__(self, obj):
-        self.obj = obj
 
-    def sample_mean(self, axis):
-        return np.mean(self.obj, axis=axis)
+def pmf_prob_greater(pmf1, pmf2):
+    """
+    probability that a value from pmf1 is less than a value from pmf2
+    :param pmf1:
+    :param pmf2:
+    :return:
+    """
+    total = 0
 
-    def sample_variance(self, axis):
-        return np.var(self.obj, axis=axis)
+    for v1, p1 in pmf1.items():
+        for v2, p2 in pmf2.items():
+            if v1 > v2:
+                total += p1 * p2
 
-    def sample_std(self, axis):
-        return np.std(self.obj, axis=axis)
+    return total
 
-    def effect_size(self, other):
-        diff = self.sample_mean(axis=0) - np.mean(other)
-        var1 = self.sample_variance(axis=0)
-        var2 = np.var(other)
-        n1, n2 = len(self.obj), len(other)
-        pooled_var = (n1 * var1 + n2 * var2) / (n1 + n2)
 
-        return diff / np.sqrt(pooled_var)
+def pmf_prob_less(pmf1, pmf2):
+    """
+    probability that a value from pmf1 is greater than a value from pmf2
+    :param pmf1:
+    :param pmf2:
+    :return:
+    """
+    total = 0
+
+    for v1, p1 in pmf1.items():
+        for v2, p2 in pmf2.items():
+            if v1 < v2:
+                total += p1 * p2
+
+    return total
+
+
+def pmf_prob_equal(pmf1, pmf2):
+    """
+    probability that a value from pmf1 is greater than a value from pmf2
+    :param pmf1:
+    :param pmf2:
+    :return:
+    """
+    total = 0
+
+    for v1, p1 in pmf1.items():
+        for v2, p2 in pmf2.items():
+            if v1 == v2:
+                total += p1 * p2
+
+    return total
