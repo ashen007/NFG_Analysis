@@ -123,21 +123,21 @@ class _DictWrapper(object):
         return maximum frequency
         :return:
         """
-        return np.max(self.d.values())
+        return np.max((self.d.values()))
 
     def min_(self):
         """
         return minimum frequency
         :return:
         """
-        return np.min(self.d.values())
+        return np.min((self.d.values()))
 
     def sum_(self):
         """
         return total of frequencies
         :return:
         """
-        return np.sum(self.d.values())
+        return np.sum(list(self.d.values()))
 
     def make_cdf(self, label=None):
         """create continues density function from this dictionary"""
@@ -349,9 +349,140 @@ class Pmf(_DictWrapper):
         return np.sqrt(self.var())
 
 
-class Summary(object):
-    """summary statistics about distribution"""
+class Cdf:
     pass
+
+
+class Pdf:
+    pass
+
+
+def convert_to_array(obj):
+    """convert into array"""
+    return np.asarray(obj)
+
+
+def mean(obj, axis=0):
+    """calculate average"""
+    if isinstance(obj, list):
+        obj = convert_to_array(obj)
+
+    return np.sum(obj, axis=axis) / len(obj)
+
+
+def trimmed_mean(obj, n=10):
+    """remove n elements from both ends of sorted values"""
+    if isinstance(obj, list):
+        obj = convert_to_array(obj)
+        return mean(obj.sort()[n: -n])
+
+    elif isinstance(obj, pd.Series):
+        return mean(obj.sort_values()[n: -n])
+
+    elif isinstance(obj, pd.DataFrame):
+        return obj.apply(lambda x: mean(x.sort_values()[n: -n]))
+
+
+def weighted_mean(obj, weights):
+    """calculate weighted"""
+    if isinstance(weights, (pd.Series, list)):
+        if len(obj) == len(weights):
+            if isinstance(weights, list):
+                return np.sum(obj * convert_to_array(weights)) / np.sum(weights)
+            else:
+                return np.sum(obj * weights) / np.sum(weights)
+        else:
+            raise AttributeError('obj and weights need to have same size')
+
+    elif isinstance(weights, str):
+        if isinstance(obj, pd.DataFrame):
+            if weights in obj.columns:
+                return np.sum(obj * obj[weights]) / np.sum(obj[weights])
+            else:
+                raise AttributeError('weights not in axis')
+        else:
+            raise AttributeError('obj is not a pandas dataframe')
+
+
+def median(obj, axis=0):
+    """calculate median"""
+    if isinstance(obj, list):
+        obj = convert_to_array(obj)
+
+        if len(obj) % 2 == 0:
+            c = len(obj) // 2
+            return np.sum(obj.sort()[c - 1: c]) / 2
+        else:
+            c = (len(obj) - 1) / 2
+            return obj.sort()[c]
+
+    elif isinstance(obj, pd.Series):
+        if len(obj) % 2 == 0:
+            c = len(obj) // 2
+            return np.sum(obj.sort_values()[c - 1: c]) / 2
+        else:
+            c = (len(obj) - 1) / 2
+            return obj.sort_values()[c]
+
+    elif isinstance(obj, pd.DataFrame):
+        return obj.apply(np.median, axis=axis)
+
+
+def var(obj, axis=0):
+    """calculate variance"""
+    if isinstance(obj, list):
+        obj = convert_to_array(obj)
+        return (obj - mean(obj)) ** 2 / (len(obj) - 1)
+
+    elif isinstance(obj, pd.Series):
+        return (obj - mean(obj)) ** 2 / (len(obj) - 1)
+
+    elif isinstance(obj, pd.DataFrame):
+        return obj.apply(lambda x: ((x - mean(x)) ** 2) / (len(obj) - 1), axis=axis)
+
+
+def std(obj, axis=0):
+    """calculate standard deviation"""
+    return np.sqrt(var(obj, axis))
+
+
+def mean_abs_deviation(obj, axis=0):
+    """calculate mean absolute deviation"""
+    if isinstance(obj, list):
+        obj = convert_to_array(obj)
+        return np.abs(obj - mean(obj)) / (len(obj))
+
+    elif isinstance(obj, pd.Series):
+        return np.abs(obj - mean(obj)) / (len(obj))
+
+    elif isinstance(obj, pd.DataFrame):
+        return obj.apply(lambda x: np.abs(x - mean(x)) / (len(x)), axis=axis)
+
+
+def mad_from_median(obj, axis=0):
+    """calculate mean absolute deviation"""
+    if isinstance(obj, list):
+        obj = convert_to_array(obj)
+        return median(obj - median(obj))
+
+    elif isinstance(obj, pd.Series):
+        return median(obj - median(obj))
+
+    elif isinstance(obj, pd.DataFrame):
+        return obj.apply(lambda x: median(x - median(x)), axis=axis)
+
+
+def iqr(obj, axis=0):
+    """calculate inter quantile range"""
+    if isinstance(obj, list):
+        obj = convert_to_array(obj)
+        return np.quantile(obj, q=0.75) - np.quantile(obj, q=0.25)
+
+    elif isinstance(obj, pd.Series):
+        return np.quantile(obj, q=0.75) - np.quantile(obj, q=0.25)
+
+    elif isinstance(obj, pd.DataFrame):
+        return obj.apply(lambda x: np.quantile(x, q=0.75) - np.quantile(x, q=0.25), axis=axis)
 
 
 def pmf_prob_greater(pmf1, pmf2):
