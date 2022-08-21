@@ -1,6 +1,6 @@
 import collections
 import copy
-
+import decimal
 import numpy as np
 import pandas as pd
 
@@ -383,7 +383,7 @@ class Cdf(_DictWrapper):
         """normalize cumulative density function"""
         if self._log:
             raise ValueError('normalize: pmf is under a log transform')
-        total = np.sum(self.ps)
+        total = self.ps[-1]
 
         if total == 0:
             raise ValueError('normalize: total probability is zero')
@@ -394,6 +394,11 @@ class Cdf(_DictWrapper):
 
     def prob(self, interval):
         """return probability that correspond to value x"""
+        if isinstance(interval, tuple):
+            interval = pd.IntervalIndex.from_tuples([interval])[0]
+        else:
+            raise ValueError('interval need to be tuple')
+
         if interval in self.ps.index:
             return self.ps[interval]
         else:
@@ -401,6 +406,11 @@ class Cdf(_DictWrapper):
 
     def probs(self, intervals):
         """return probabilities of sequence of intervals"""
+        if isinstance(intervals, list):
+            intervals = pd.IntervalIndex.from_tuples([intervals])
+        else:
+            raise ValueError('interval need to be list of tuple')
+
         return [self.prob(p) for p in intervals]
 
     def value(self, p):
@@ -408,7 +418,8 @@ class Cdf(_DictWrapper):
         if p < 0 or p > 1:
             raise ValueError('p must be in range [0, 1]')
 
-        return self.ps[self.ps == p].index[0]
+        f = abs(decimal.Decimal(str(p)).as_tuple().exponent)
+        return self.ps[round(self.ps, f) == p].index[0]
 
     def values(self, p=None):
         """returns the value that corresponds to probability p"""
@@ -420,7 +431,8 @@ class Cdf(_DictWrapper):
         if any(p < 0) or any(p > 1):
             raise ValueError('p must be in range [0, 1]')
 
-        return self.ps[self.ps in p].index
+        f = abs(decimal.Decimal(str(p)).as_tuple().exponent)
+        return [self.ps[round(self.ps, f) == i].index for i in p]
 
     def percentile(self, p):
         """returns the value corresponds to percentile p"""

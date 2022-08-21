@@ -111,11 +111,11 @@ def plot_cdf(obj,
     plt.figure(figsize=(12, 6), dpi=300)
 
     if isinstance(obj, list):
-        sns.histplot(obj, stat='probability', cumulative=True, element='step', discrete=False, fill=False, label=label,
+        sns.histplot(obj, stat='density', cumulative=True, element='step', discrete=False, fill=False, label=label,
                      **options)
 
     elif isinstance(obj, pd.Series):
-        sns.histplot(obj, stat='probability', cumulative=True, element='step', discrete=False, fill=False, label=label,
+        sns.histplot(obj, stat='density', cumulative=True, element='step', discrete=False, fill=False, label=label,
                      **options)
 
     elif isinstance(obj, pd.DataFrame):
@@ -257,12 +257,12 @@ def compare_cdf(*objs,
 
     if all([isinstance(obj, list) for obj in objs]):
         for i, obj in enumerate(objs):
-            sns.histplot(obj, stat='probability', color=c_codes(i), element='step', fill=False, cumulative=True,
+            sns.histplot(obj, stat='density', color=c_codes(i), element='step', fill=False, cumulative=True,
                          discrete=False, label=labels[i], **options)
 
     elif all([isinstance(obj, pd.Series) for obj in objs]):
         for i, obj in enumerate(objs):
-            sns.histplot(obj, stat='probability', color=c_codes(i), element='step', fill=False, cumulative=True,
+            sns.histplot(obj, stat='density', color=c_codes(i), element='step', fill=False, cumulative=True,
                          discrete=False, label=labels[i], **options)
 
     elif any([isinstance(obj, pd.DataFrame) for obj in objs]):
