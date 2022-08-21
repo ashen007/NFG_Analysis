@@ -39,16 +39,20 @@ class _DictWrapper(object):
             else:
                 bins = np.histogram_bin_edges(obj, bins=bins, **options)
                 quantile = pd.cut(obj, bins)
-                self.d.update(obj.groupby(quantile).count().to_dict().items())
+                self.ps = obj.groupby(quantile).count().sort_index()
+                self.ps = self.ps.cumsum()
         else:
             if self.discrete:
                 self.d.update(collections.Counter(obj))
             else:
                 bins = np.histogram_bin_edges(obj, bins=bins, **options)
                 quantile = pd.cut(obj, bins)
-                self.d.update(pd.Series(obj).groupby(quantile).count().to_dict().items())
+                self.ps = pd.Series(obj).groupby(quantile).count().sort_index()
+                self.ps = self.ps.cumsum()
 
         if len(self) > 0 and isinstance(self, Pmf):
+            self.normalize()
+        elif len(self) > 0 and isinstance(self, Cdf):
             self.normalize()
 
     def copy(self, label=None):
@@ -349,8 +353,91 @@ class Pmf(_DictWrapper):
         return np.sqrt(self.var())
 
 
-class Cdf:
-    pass
+class Cdf(_DictWrapper):
+    """represent a cumulative distribution function"""
+
+    def log(self, m=None):
+        """
+        log transform the frequencies
+        :param m: maximum value
+        :return:
+        """
+        if self._log:
+            raise ValueError('already transformed.')
+
+        self._log = True
+
+        if m is None:
+            m = np.max(self.ps)
+
+        self.ps = np.log(self.ps / m)
+
+    def scale(self, factor):
+        """multiply the xs by factor"""
+        new = self.ps.copy()
+        new = new * factor
+
+        return new
+
+    def normalize(self, fraction=1):
+        """normalize cumulative density function"""
+        if self._log:
+            raise ValueError('normalize: pmf is under a log transform')
+        total = np.sum(self.ps)
+
+        if total == 0:
+            raise ValueError('normalize: total probability is zero')
+
+        factor = fraction / total
+
+        self.ps = self.ps * factor
+
+    def prob(self, interval):
+        """return probability that correspond to value x"""
+        if interval in self.ps.index:
+            return self.ps[interval]
+        else:
+            return None
+
+    def probs(self, intervals):
+        """return probabilities of sequence of intervals"""
+        return [self.prob(p) for p in intervals]
+
+    def value(self, p):
+        """returns the value that corresponds to probability p"""
+        if p < 0 or p > 1:
+            raise ValueError('p must be in range [0, 1]')
+
+        return self.ps[self.ps == p].index[0]
+
+    def values(self, p=None):
+        """returns the value that corresponds to probability p"""
+        if p is None:
+            return self.ps.index
+
+        p = np.asarray(p)
+
+        if any(p < 0) or any(p > 1):
+            raise ValueError('p must be in range [0, 1]')
+
+        return self.ps[self.ps in p].index
+
+    def percentile(self, p):
+        """returns the value corresponds to percentile p"""
+        return self.value(p / 100)
+
+    def percentiles(self, p):
+        """returns value that corresponds to percentile p"""
+        p = np.asarray(p)
+        return self.values(p / 100)
+
+    def percentile_rank(self, interval):
+        """returns the percentile rank of the value interval"""
+        return self.prob(interval) * 100
+
+    def percentile_ranks(self, intervals):
+        """returns the percentile ranks of the value intervals"""
+        return self.probs(intervals) * 100
 
 
 class Pdf:
