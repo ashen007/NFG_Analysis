@@ -55,7 +55,7 @@ def plot_pmf(obj,
              title=None,
              label=None,
              discrete=True,
-             element='step',
+             element='bars',
              **options):
     """
     plot probability mass function
@@ -76,6 +76,47 @@ def plot_pmf(obj,
 
     elif isinstance(obj, pd.Series):
         sns.histplot(obj, stat='probability', element=element, discrete=discrete, label=label, **options)
+
+    elif isinstance(obj, pd.DataFrame):
+        raise AttributeError('can not create plot for dataframe object need 1d object.')
+
+    if xlabel is not None:
+        plt.xlabel(xlabel)
+
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+
+    if title is not None:
+        plt.title(title)
+
+    plt.show()
+
+
+def plot_cdf(obj,
+             xlabel=None,
+             ylabel=None,
+             title=None,
+             label=None,
+             **options):
+    """
+    plot probability mass function
+    :param obj:
+    :param xlabel:
+    :param ylabel:
+    :param title:
+    :param label:
+    :param options:
+    :return:
+    """
+    plt.figure(figsize=(12, 6), dpi=300)
+
+    if isinstance(obj, list):
+        sns.histplot(obj, stat='probability', cumulative=True, element='step', discrete=False, fill=False, label=label,
+                     **options)
+
+    elif isinstance(obj, pd.Series):
+        sns.histplot(obj, stat='probability', cumulative=True, element='step', discrete=False, fill=False, label=label,
+                     **options)
 
     elif isinstance(obj, pd.DataFrame):
         raise AttributeError('can not create plot for dataframe object need 1d object.')
@@ -175,6 +216,54 @@ def compare_pmf(*objs,
         for i, obj in enumerate(objs):
             sns.histplot(obj, stat='probability', color=c_codes(i), element=element, discrete=discrete, label=labels[i],
                          **options)
+
+    elif any([isinstance(obj, pd.DataFrame) for obj in objs]):
+        raise AttributeError('can not create plot for dataframe object need 1d object.')
+
+    if xlabel is not None:
+        plt.xlabel(xlabel)
+
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+
+    if title is not None:
+        plt.title(title)
+
+    plt.legend(title=l_title, labels=labels)
+    plt.show()
+
+
+def compare_cdf(*objs,
+                labels,
+                xlabel=None,
+                ylabel=None,
+                title=None,
+                l_title=None,
+                **options):
+    """
+    compare multiple histograms
+    :param l_title:
+    :param labels:
+    :param objs:
+    :param xlabel:
+    :param ylabel:
+    :param title:
+    :param labels:
+    :param options:
+    :return:
+    """
+    plt.figure(figsize=(12, 6), dpi=300)
+    c_codes = colors('winter', len(labels))
+
+    if all([isinstance(obj, list) for obj in objs]):
+        for i, obj in enumerate(objs):
+            sns.histplot(obj, stat='probability', color=c_codes(i), element='step', fill=False, cumulative=True,
+                         discrete=False, label=labels[i], **options)
+
+    elif all([isinstance(obj, pd.Series) for obj in objs]):
+        for i, obj in enumerate(objs):
+            sns.histplot(obj, stat='probability', color=c_codes(i), element='step', fill=False, cumulative=True,
+                         discrete=False, label=labels[i], **options)
 
     elif any([isinstance(obj, pd.DataFrame) for obj in objs]):
         raise AttributeError('can not create plot for dataframe object need 1d object.')
